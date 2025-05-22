@@ -131,3 +131,4 @@ func countExchange(currency string, sum int, currencyToConv string) float64 {
 	}
 	return 0.0
 }
+// test
