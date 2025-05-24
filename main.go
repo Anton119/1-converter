@@ -3,133 +3,107 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
 )
 
-const EurToRub = 91.2
-const EurToUsd = 1.13
-const UsdToRub = 80.0
-const UsdToEur = 0.88
-const RubToUsd = 84.0
-const RubToEur = 94.6
+var exchangeRates = map[string]map[string]float64{
+	"USD": {"RUB": 80.0, "EUR": 0.88},
+	"EUR": {"RUB": 91.0, "USD": 1.13},
+	"RUB": {"USD": 84.0, "EUR": 94.6},
+}
 
-const EUR = "EUR"
-const RUB = "RUB"
-const USD = "USD"
+var currencyOptions = map[int]string{
+	1: "USD",
+	2: "EUR",
+	3: "RUB",
+}
 
 func main() {
-	fmt.Println("Добро пожаловать в конвертер валют")
+	fmt.Println("Добро пожаловать в конвертер валют!")
+Menu:
 	for {
-		fmt.Printf("Выберите название исходной валюты: 1)%s, 2)%s, 3)%s: ", USD, EUR, RUB)
-		currency, err := getUserCurrency()
+		fmt.Println("Выберите валюту, которую вы хотите конвертировать: 1)USD 2)EUR 3)RUB")
+		userChoice, err := getUserCurrency()
 		if err != nil {
-			fmt.Println(currency, err)
+			fmt.Println(err)
+			break Menu
 		}
 
-		fmt.Println("Введите сумму для конвертации: ")
-		sum, err := getSum()
-		if err != nil {
-			fmt.Println(sum, err)
-		}
+		fmt.Println("Введите сумму для обмена: ")
+		sum := getUserSum()
 
-		covertTo_1, convertTo_2, err := availableCurrencyToConver(currency)
+		currency, convertTo_1, convertTo_2, err := availableCurrencyToConvert(&exchangeRates, &currencyOptions, userChoice)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		fmt.Printf("Выберите валюту для конвертации: 1)%s, 2)%s: ", covertTo_1, convertTo_2)
-		convertCurrencyChoice, err := getCurrecnyToConvert()
+		fmt.Printf("Выберите валюту для конвертации: 1)%s 2)%s\n", convertTo_1, convertTo_2)
+		outcome, err := convertTo(currency, sum, convertTo_1, convertTo_2, &exchangeRates)
 		if err != nil {
-			fmt.Println("", err)
+			fmt.Println(err)
 		}
 
-		currencyToConvert := ""
-		switch convertCurrencyChoice {
-		case "1":
-			currencyToConvert = covertTo_1
-		case "2":
-			currencyToConvert = convertTo_2
-		}
-
-		res := countExchange(currency, sum, currencyToConvert)
-
-		fmt.Printf("Результат вашей операции: %.2f\n", res)
+		fmt.Println("Результат:", outcome)
 
 	}
 }
 
-func getUserCurrency() (string, error) {
-	var input string
+func getUserCurrency() (int, error) {
+	var input int
 	fmt.Scan(&input)
-	var currency string
 
-	choice, _ := strconv.Atoi(input)
-	switch choice {
-	case 1:
-		currency = USD
-	case 2:
-		currency = EUR
-	case 3:
-		currency = RUB
-	default:
-		return "", errors.New("INVALID_FORMAT")
+	if input < 0 || input > 3 {
+		return 0, errors.New("Выбор должен быть от 1 до 3")
 	}
-	return currency, nil
+	return input, nil
 }
 
-func getSum() (int, error) {
+func getUserSum() int {
 	var sum int
 	fmt.Scan(&sum)
-	return sum, nil
+	return sum
 }
 
-func availableCurrencyToConver(currency string) (string, string, error) {
+// возвращает валюту для конвертации и 2 валюты во что конвертировать
+func availableCurrencyToConvert(exchangeRates *map[string]map[string]float64, currencyOptions *map[int]string, userChoice int) (string, string, string, error) {
 
-	currencies := []string{EUR, RUB, USD}
-	convertedCurrencies := []string{}
-	for i := 0; i < len(currencies); i++ {
-		if currency != currencies[i] {
-			convertedCurrencies = append(convertedCurrencies, currencies[i])
-		}
+	convertedCurrency := make([]string, 0, 2)
+
+	currency, ok := (*currencyOptions)[userChoice]
+	if !ok {
+		return "err", "err", "err", errors.New("Невалидное значение выбора")
 	}
 
-	return convertedCurrencies[0], convertedCurrencies[1], nil
+	convertRates, ok := (*exchangeRates)[currency]
+	if !ok {
+		return "err", "err", "err", errors.New("Валюта не найдена")
+	}
+
+	for key, _ := range convertRates {
+		convertedCurrency = append(convertedCurrency, key)
+	}
+	return currency, convertedCurrency[0], convertedCurrency[1], nil
 
 }
 
-func getCurrecnyToConvert() (string, error) {
-	var input string
-	fmt.Scan(&input)
-	return input, nil
+func convertTo(currency string, sum int, convertTo_1 string, convertTo_2 string, exchangeRates *map[string]map[string]float64) (float64, error) {
+	choices := map[int]string{
+		1: convertTo_1,
+		2: convertTo_2,
+	}
 
-}
+	var choice int
+	fmt.Scan(&choice)
 
-func countExchange(currency string, sum int, currencyToConv string) float64 {
-	res := float64(sum)
-	switch currency {
-	case USD:
-		switch currencyToConv {
-		case RUB:
-			return res * UsdToRub
-		case EUR:
-			return res * UsdToEur
-		}
-	case EUR:
-		switch currencyToConv {
-		case USD:
-			return res * EurToUsd
-		case RUB:
-			return res * EurToRub
-		}
-	case RUB:
-		switch currencyToConv {
-		case USD:
-			return res * RubToUsd
-		case EUR:
-			return res * RubToEur
+	if choice < 0 || choice > 2 {
+		return 0.0, errors.New("Выбери от 1 до 2")
+	}
+
+	covertionCurrecny := choices[choice]
+	res := 0.0
+	for key, val := range (*exchangeRates)[currency] {
+		if key == covertionCurrecny {
+			res = float64(sum) * val
 		}
 	}
-	return 0.0
+	return res, nil
 }
-
-// тестирую коммиты
