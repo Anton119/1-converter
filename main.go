@@ -5,19 +5,19 @@ import (
 	"fmt"
 )
 
-var exchangeRates = map[string]map[string]float64{
-	"USD": {"RUB": 80.0, "EUR": 0.88},
-	"EUR": {"RUB": 91.0, "USD": 1.13},
-	"RUB": {"USD": 84.0, "EUR": 94.6},
-}
-
-var currencyOptions = map[int]string{
-	1: "USD",
-	2: "EUR",
-	3: "RUB",
-}
-
 func main() {
+	var exchangeRates = map[string]map[string]float64{
+		"USD": {"RUB": 80.0, "EUR": 0.88},
+		"EUR": {"RUB": 91.0, "USD": 1.13},
+		"RUB": {"USD": 84.0, "EUR": 94.6},
+	}
+
+	var currencyOptions = map[int]string{
+		1: "USD",
+		2: "EUR",
+		3: "RUB",
+	}
+
 	fmt.Println("Добро пожаловать в конвертер валют!")
 Menu:
 	for {
@@ -43,6 +43,7 @@ Menu:
 		}
 
 		fmt.Println("Результат:", outcome)
+		break Menu
 
 	}
 }
